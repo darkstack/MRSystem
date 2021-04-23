@@ -7,7 +7,6 @@ use sdl2::keyboard::Keycode;
 pub mod mem;
 pub mod gfx;
 pub mod cpu;
-pub mod utils;
 
 #[derive(StructOpt,Clone)]
 struct Cli {

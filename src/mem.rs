@@ -1,4 +1,4 @@
-use crate::utils;
+
 use std::fs::File;
 use std::io::Error;
 use std::io::{self, Read, Write};
@@ -17,6 +17,7 @@ pub trait Mem {
 
 pub struct Rom {
     buff: Vec<u8>,
+    sms_header: Header,
 }
 pub struct Ram {
     buff: Vec<u8>,
@@ -31,9 +32,10 @@ impl Ram {
 }
 
 impl Rom {
-    pub fn new(size: usize) -> Rom {
+    pub fn new(smsheader : Header, size: usize) -> Rom {
         Rom {
             buff: vec![0; size],
+            sms_header: smsheader,
         }
     }
 }
@@ -99,21 +101,7 @@ pub enum ROMTYPE {
     _128K = 0x4E,
     _256K = 0x4F,
 }
-// impl ROMTYPE {
 
-//     fn from_u8(value: u8) -> ROMTYPE {
-//         match value {
-//             0x4A => ROMTYPE::_8K,
-//             0x4B => ROMTYPE::_16K,
-//             0x4C => ROMTYPE::_32K,
-//             0x4D => ROMTYPE::_48K,
-//             0x4E => ROMTYPE::_128K,
-//             0x4F => ROMTYPE::_256K,
-//             _ => panic!("Unknown value: {}", value),
-//         }
-//     }
-
-// }
 impl From<u8> for ROMTYPE {
     fn from(v: u8) -> Self {
         match v {
@@ -128,8 +116,7 @@ impl From<u8> for ROMTYPE {
     }
 }
 
-// }
-struct header {
+pub struct Header {
     header: [u8; 10],
     checksum: u16,
     serial: u16,
@@ -138,6 +125,7 @@ struct header {
 }
 
 const HEADER_OFFSET: usize = 0x7FF0;
+use std::convert::TryInto;
 
 pub fn load_rom(file: PathBuf) -> Result<Rom, Error> {
     println!("load {}", file.to_string_lossy());
@@ -163,10 +151,9 @@ pub fn load_rom(file: PathBuf) -> Result<Rom, Error> {
         prg_rom[HEADER_OFFSET + 2],
         prg_rom[HEADER_OFFSET + 3],
     ];
-    let _h: [u8; 10] = utils::clone_into_array(&prg_rom[HEADER_OFFSET..HEADER_OFFSET + 10]);
-
-    let smsheader = header {
-        header: utils::clone_into_array(&prg_rom[HEADER_OFFSET..HEADER_OFFSET + 10]),
+    
+    let smsheader = Header {
+        header: prg_rom[HEADER_OFFSET..HEADER_OFFSET + 10].try_into().expect("Error"),
         checksum: (prg_rom[HEADER_OFFSET + 10] as u16)
             | ((prg_rom[HEADER_OFFSET + 11] as u16) << 8),
         serial: (prg_rom[HEADER_OFFSET + 12] as u16) | ((prg_rom[HEADER_OFFSET + 13] as u16) << 8),
@@ -176,5 +163,5 @@ pub fn load_rom(file: PathBuf) -> Result<Rom, Error> {
     //Check Rom Header
 
     println!("Rom Loaded");
-    Ok(Rom { buff: prg_rom })
+    Ok(Rom {sms_header:smsheader, buff: prg_rom })
 }
