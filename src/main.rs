@@ -7,6 +7,7 @@ use sdl2::keyboard::Keycode;
 pub mod mem;
 pub mod gfx;
 pub mod cpu;
+pub mod utils;
 
 #[derive(StructOpt,Clone)]
 struct Cli {
@@ -23,11 +24,11 @@ fn main() -> ! {
 
     let cli = Cli::from_args();
     let rom_path = &cli.rom;
-    let rom = mem::load_rom(rom_path.to_path_buf());
+    let rom = mem::load_rom(rom_path.to_path_buf()).expect("rom error");
 
     let (mut gfx, sdl)= gfx::Gfx::new();
     let mut screen = Box::new([0; gfx::SCREEN_SIZE]);
-    let memmap = mem::MemMap::new();
+    let memmap = mem::MemMap::new(rom);
     let mut cpu = cpu::Cpu::new(memmap,cli.debug.is_some());
     loop{
   
