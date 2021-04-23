@@ -1,5 +1,5 @@
 /target
 *.sms
 .vscode/
-.lock
-.back
+*.lock
+*.back

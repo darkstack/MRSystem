@@ -1,6 +1,6 @@
 
 use crate::mem::Mem;
-
+#[derive(Debug)]
 struct Regs {
     //Acumulator
     a: u8,
@@ -56,6 +56,7 @@ pub struct Cpu<M: Mem> {
     pub c: u64,
     regs: Regs,
     pub mem: M,
+    pub debug: bool
 }
 
 impl<M: Mem> Mem for Cpu<M>{
@@ -70,11 +71,26 @@ impl<M: Mem> Mem for Cpu<M>{
 
 impl <M: Mem> Cpu<M>{
 
-    pub fn new(mem: M) -> Cpu<M> {
+    pub fn new(mem: M,debug :bool) -> Cpu<M> {
         Cpu {
             c: 0,
             regs: Regs::new(),
             mem: mem,
+            debug: debug,
         }
+    }
+
+    pub fn trace(&mut self){
+        if self.debug{
+            println!("{:?}",self.regs)
+        }
+            
+    }
+
+    pub fn step(&mut self){
+        self.trace();
+        let pc = self.regs.pc;
+        let op = self.load(pc);
+        self.regs.pc+=1;
     }
 }

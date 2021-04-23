@@ -1,5 +1,5 @@
 [package]
-name = "MRSystem"
+name = "mrsystem"
 version = "0.1.0"
 authors = ["Tom <1835601+darkstack@users.noreply.github.com>"]
 edition = "2018"
