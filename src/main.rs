@@ -1,4 +1,4 @@
-
+#![allow(dead_code)]
 use structopt::StructOpt;
 use std::io::{self, BufRead};
 use sdl2::event::Event;

@@ -4,7 +4,7 @@ use std::io::Error;
 use std::io::{self, Read, Write};
 use std::path::Path;
 use std::path::PathBuf;
-use crate::utils;
+use crate::utils::*;
 pub trait AddressSpace {
     // Minimal definition
     fn peek(&self, ptr: u16) -> u8;
@@ -14,6 +14,7 @@ pub trait AddressSpace {
 pub trait Mem {
     fn load(&mut self, addr: u16) -> u8;
     fn store(&mut self, addr: u16, v: u8);
+    fn storew(&mut self, addr: u16, v: u16);
 }
 
 
@@ -65,7 +66,10 @@ impl Mem for Rom{
     }
 
     fn store(&mut self, addr: u16, v: u8) {
-        todo!()
+        panic!("Write to rom")
+    }
+    fn storew(&mut self, addr: u16, v: u16) {
+        panic!("Write to rom")
     }
 }
 
@@ -99,11 +103,31 @@ impl MemMap {
 
 impl Mem for MemMap {
     fn load(&mut self, addr: u16) -> u8 {
-        let ret = self.rom.peek(addr);
-        ret
+        if addr > 0xC000 && addr < 0xE000 {
+            let ret = self.ram.peek(addr);
+            ret
+        }
+        else{
+            let ret = self.rom.peek(addr);
+            ret
+        }
     }
     fn store(&mut self, addr: u16, v: u8) {
-        println!("write {:x} for {:x}", addr, v);
+        println!("write at {:x} value {:x}", addr, v);
+        //RAM
+        if (addr > 0xC000 && addr < 0xE000) || addr >= 0xE000{
+            self.ram.poke(addr & 0x0FFF,v);
+        }
+    }
+    fn storew(&mut self, addr: u16, v: u16) {
+        println!("writew at {:x} value {:x}", addr, v);
+        //RAM
+        if (addr > 0xC000 && addr < 0xE000 ) || addr >= 0xE000 {
+            let (a,b) = get_2_u8_from_u16(v);
+            self.ram.poke(addr & 0x0FFF,a);
+            self.ram.poke((addr & 0x0FFF)+1,b);
+            println!("{:?}",self.ram.buff);
+        }
     }
 }
 #[repr(u8)]
