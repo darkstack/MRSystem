@@ -1,13 +1,19 @@
 #![allow(dead_code)]
+use std::rc::Rc;
+
 use structopt::StructOpt;
-use std::io::{self, BufRead};
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 
 pub mod mem;
+pub mod ram;
+pub mod vram;
+pub mod rom;
 pub mod gfx;
+pub mod vdp;
 pub mod cpu;
-pub mod cpu2;
+pub mod bus;
+
 pub mod utils;
 
 #[derive(StructOpt,Clone)]
@@ -25,15 +31,17 @@ fn main() -> ! {
 
     let cli = Cli::from_args();
     let rom_path = &cli.rom;
-    let rom = mem::load_rom(rom_path.to_path_buf()).expect("rom error");
+    let rom = rom::load_rom(rom_path.to_path_buf()).expect("rom error");
 
     let (mut gfx, sdl)= gfx::Gfx::new();
-    let mut screen = Box::new([0; gfx::SCREEN_SIZE]);
-    let memmap = mem::MemMap::new(rom);
+    
+
+    let mut vdp = vdp::Vdp::new();
+    let memmap = mem::MemMap::new(rom,vdp);
     //let mut cpu = cpu::Cpu::new(memmap,cli.debug.is_some());
-    let mut cpu = cpu2::Cpu2::new(memmap,cli.debug.is_some());
+    let mut cpu = cpu::Cpu::new(memmap,cli.debug.is_some());
     gfx.tick();
-    gfx.composite(&mut screen);
+    gfx.composite(&mut cpu.mem.vdp.screen);
     loop{
   
         cpu.step();
