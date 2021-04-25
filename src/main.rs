@@ -7,6 +7,7 @@ use sdl2::keyboard::Keycode;
 pub mod mem;
 pub mod gfx;
 pub mod cpu;
+pub mod cpu2;
 pub mod utils;
 
 #[derive(StructOpt,Clone)]
@@ -29,7 +30,10 @@ fn main() -> ! {
     let (mut gfx, sdl)= gfx::Gfx::new();
     let mut screen = Box::new([0; gfx::SCREEN_SIZE]);
     let memmap = mem::MemMap::new(rom);
-    let mut cpu = cpu::Cpu::new(memmap,cli.debug.is_some());
+    //let mut cpu = cpu::Cpu::new(memmap,cli.debug.is_some());
+    let mut cpu = cpu2::Cpu2::new(memmap,cli.debug.is_some());
+    gfx.tick();
+    gfx.composite(&mut screen);
     loop{
   
         cpu.step();
@@ -53,8 +57,8 @@ fn main() -> ! {
 
         }
  
-
-        gfx.tick();
-        gfx.composite(&mut screen)
+        
+        // gfx.tick();
+        // gfx.composite(&mut screen)
     }
 }
