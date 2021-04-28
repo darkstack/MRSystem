@@ -22,11 +22,14 @@ impl Vdp {
 
     }
 }
+
 impl Mem for Vdp{
     fn load(&mut self, addr: u16) -> u8 {
         todo!();
     }
-
+    fn loadw(&mut self, addr: u16) -> u16{
+        todo!();
+    }
     fn store(&mut self, addr: u16, v: u8) {
         println!("VDP : addr: {:04x} v: {:01x}",addr,v);
     }

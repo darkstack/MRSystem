@@ -1,6 +1,9 @@
 use crate::mem::Mem;
 use crate::utils::*;
 use crate::bus::*;
+//Debug
+use std::fs::File;  
+use std::io::Write; 
 struct Register {}
 
 impl Register {
@@ -261,7 +264,7 @@ pub struct Cpu<M: Mem> {
 }
 
 
-impl<M: BusSpace + Mem> Cpu<M> {
+impl<M: BusSpace + Mem + FormatDataDebug> Cpu<M> {
     pub fn new(mem: M, debug: bool) -> Cpu<M> {
         Cpu {
             c: 0,
@@ -276,9 +279,20 @@ impl<M: BusSpace + Mem> Cpu<M> {
         self.mem.storew(self.regs.sp(), v);
         self.regs.set_sp(self.regs.sp()-2);
     }
+    pub fn pop(&mut self) -> u16 {
+        let sp = self.regs.sp();
+        let x =self.mem.loadw(sp);        
+        self.regs.set_sp(self.regs.sp()+2);
+        x
+    }
     pub fn trace(&self) {
         if self.debug {
             println!("PC : {:08X} | SP : {:04X} | {:?}", self.regs.pc,self.regs.sp(), self.regs)
+        }
+    }
+    pub fn trace_ram(&self) {
+        if self.debug {
+            self.mem.debug();
         }
     }
     pub fn trace_op(&self,op:u8,x:u8,y:u8,z:u8) {
@@ -379,6 +393,13 @@ impl<M: BusSpace + Mem> Cpu<M> {
                 self.regs.pc += 1;
                 1
             }
+            //LD A,C
+            (1,14,1) => {
+                self.regs.set_a(self.regs.c());
+                self.regs.pc += 1;
+                1
+            }
+
             //OR C
             (2, 12, 1) => {
                 let x = self.regs.a() | self.regs.c();
@@ -401,6 +422,7 @@ impl<M: BusSpace + Mem> Cpu<M> {
             }
              //PUSH BC
             (3,1,5) =>{
+                
                 let x = self.regs.bc();
                 self.push(self.regs.bc());
                 self.regs.pc += 1;
@@ -409,7 +431,6 @@ impl<M: BusSpace + Mem> Cpu<M> {
             //CALL
             (3,3,5) =>{
                 let c_pc = self.regs.pc;
-
                 let n=self.mem.load(addr + 1);
                 let n2= self.mem.load(addr + 2);
                 let nn = get_u16_from_2_u8(n,n2);
@@ -427,25 +448,44 @@ impl<M: BusSpace + Mem> Cpu<M> {
                 self.regs.pc+=2;
                 1
             }
+            //POP HL
+            (3,8,1) =>{
+                self.trace_ram();
+                let p = self.pop();
+                self.regs.set_hl(p);
+                self.regs.pc+=1;
+                1
+            }
             //PUSH HL
             (3,9,5) =>{
+                self.trace_ram();
                 let x = self.regs.hl();
                 self.push(self.regs.hl());
                 self.regs.pc += 1;
+                
                 3
             }
+            //DI
             (3, 12, 3) => {
                 //TODO
                 println!("Disable interupt");
                 self.regs.pc += 1;
                 1
             }
+            //OR A ^ v
+            (3,13,6) => {
+                let read=self.mem.load(addr + 1);
+                self.regs.set_a(self.regs.a() | read);
+                self.regs.pc += 2;
+                1
+            }
             
             _ => {
                 println!("ERROR OP CODE :{:X} ({},{},{})",op , x, y, z);
                 println!("ERROR NEXT CODE :{:X}", self.mem.load(addr + 1));
-                
+               
                 panic!("OP ERROR 0x{:X}", op)
+                
             },
         };
     }

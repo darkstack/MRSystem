@@ -15,9 +15,13 @@ impl Ram {
 
 impl AddressSpace for Ram {
     fn peek(&self, ptr: u16) -> u8 {
-        return self.buff[ptr as usize];
+        print!("Peek ram at : {:X} ",ptr);
+        let v = self.buff[ptr as usize];
+        println!(" Value : {:X}",v);
+        v
     }
     fn poke(&mut self, ptr: u16, v: u8) {
+        print!("Peek ram at : {:X} ",ptr);
         self.buff[ptr as usize] = v;
     }
 }

@@ -1,4 +1,8 @@
 
+use std::fmt::format;
+
+use crate::utils::FormatDataDebug;
+
 //use std::io::{self, Read, Write};
 use crate::{bus::BusSpace, ram::Ram, rom::Rom, vdp::Vdp};
 use crate::utils::*;
@@ -8,8 +12,10 @@ pub trait AddressSpace {
     fn poke(&mut self, ptr: u16, v: u8);
 }
 
+
 pub trait Mem {
     fn load(&mut self, addr: u16) -> u8;
+    fn loadw(&mut self, addr: u16) -> u16;
     fn store(&mut self, addr: u16, v: u8);
     fn storew(&mut self, addr: u16, v: u16);
 }
@@ -56,11 +62,12 @@ impl BusSpace for MemMap{
     }
 }
 
+
 impl Mem for MemMap {
 
     fn load(&mut self, addr: u16) -> u8 {
-        if addr > 0xC000 && addr < 0xE000 {
-            let ret = self.ram.peek(addr);
+        if addr > 0xC000  {
+            let ret = self.ram.peek(addr & 0x1FF);
             ret
         }
         else{
@@ -68,11 +75,23 @@ impl Mem for MemMap {
             ret
         }
     }
+    //TODO: uGly
+    fn loadw(&mut self, addr: u16) -> u16 {
+        if addr > 0xC000 {
+            
+            let ret = get_u16_from_2_u8( self.ram.peek(addr & 0x1FFF), self.ram.peek((addr+1)&0x1FFF) );
+            ret
+        }
+        else{
+            let ret = get_u16_from_2_u8( self.rom.peek(addr), self.rom.peek(addr+1));
+            ret
+        }
+    }
     fn store(&mut self, addr: u16, v: u8) {
         println!("write at {:x} value {:x}", addr, v);
         //RAM
-        if (addr > 0xC000 && addr < 0xE000) || addr >= 0xE000{
-            self.ram.poke(addr & 0x0FFF,v);
+        if (addr > 0xC000){
+            self.ram.poke(addr & 0x1FFF,v);
         }
         else{
             panic!("{:04X} : NOT MAPPED",addr);
@@ -82,10 +101,10 @@ impl Mem for MemMap {
         println!("writew at {:x} value {:x}", addr, v);
         //RAM
 
-        if (addr > 0xC000 && addr < 0xE000 ) || addr >= 0xE000 {
+        if ( addr > 0xC000 ) {
             let (a,b) = get_2_u8_from_u16(v);
-            self.ram.poke(addr & 0x0FFF,a);
-            self.ram.poke((addr & 0x0FFF)+1,b);
+            self.ram.poke(addr & 0x1FFF,a);
+            self.ram.poke((addr & 0x1FFF)+1,b);
             println!("{:?}",self.ram.buff);
         }
         else{
@@ -94,5 +113,17 @@ impl Mem for MemMap {
     }
 
     
+}
+
+use std::fs::File;  
+use std::io::Write; 
+impl FormatDataDebug for MemMap {
+    fn debug(&self) {
+        let x = self.ram.buff.clone();
+        println!("RAM: {:?}", x);
+        let mut f = File::create("ram.hex").expect("Unable to create file"); 
+        f.write_all(&x).expect("error");
+        // let s = format!("{:x}",self.
+    }
 }
 

@@ -32,6 +32,10 @@ impl Mem for Rom{
         let v = self.buff[addr as usize];
         v
     }
+    //TODO : unused ? 
+    fn loadw(&mut self, addr: u16) -> u16{
+        0
+    }
 
     fn store(&mut self, addr: u16, v: u8) {
         panic!("Write to rom")
