@@ -25,25 +25,22 @@ struct Cli {
     #[structopt(short = "r", long = "rom",parse(from_os_str))]
     rom: std::path::PathBuf,
 }
-
-fn main() -> ! {
-
+fn main() {
 
     let cli = Cli::from_args();
     let rom_path = &cli.rom;
     let rom = rom::load_rom(rom_path.to_path_buf()).expect("rom error");
 
     let (mut gfx, sdl)= gfx::Gfx::new();
-    
+
 
     let mut vdp = vdp::Vdp::new();
     let memmap = mem::MemMap::new(rom,vdp);
-    //let mut cpu = cpu::Cpu::new(memmap,cli.debug.is_some());
     let mut cpu = cpu::Cpu::new(memmap,cli.debug.is_some());
     gfx.tick();
     gfx.composite(&mut cpu.mem.vdp.screen);
     loop{
-  
+
         cpu.step();
         //Event pump
         while let Some(ev) = sdl.event_pump().unwrap().poll_event() {
@@ -52,7 +49,7 @@ fn main() -> ! {
                 Event::KeyDown {
                     keycode: Some(key), ..
                 } => {
-                    match key { 
+                    match key {
                         Keycode::Escape => {
                             std::process::exit(0);
                         }
@@ -64,8 +61,8 @@ fn main() -> ! {
             }
 
         }
- 
-        
+
+
         // gfx.tick();
         // gfx.composite(&mut screen)
     }
