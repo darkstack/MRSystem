@@ -303,9 +303,7 @@ impl<M: BusSpace + Mem + FormatDataDebug> Cpu<M> {
         }
     }
     pub fn trace_ram(&self) {
-        if self.debug {
             self.mem.debug();
-        }
     }
     pub fn trace_op(&self,op:u8,x:u8,y:u8,z:u8) {
         if self.debug {
@@ -377,12 +375,32 @@ impl<M: BusSpace + Mem + FormatDataDebug> Cpu<M> {
                
                 1
             }
+
             //38 26 100110 LD h,r
             (0,4,6) => {
                 let n = self.fetch_op(addr + 1);
                 self.regs.set_h(n);
 
                 0
+            }
+
+            //JR Z 
+            (0,5,0)=> {
+              
+                let o = self.fetch_op(addr + 1) as i8;
+                let z = self.regs.get_zero_flag();
+                if !z {
+                    if o.is_negative() {
+                        let abs = o.wrapping_abs() as u16;
+                        self.regs.pc -= abs; //we fetched the next operand first so +2 :S
+                        3
+                    } else {
+                        self.regs.pc += o as u16;
+                        3
+                    }
+                } else {
+                2
+                }
             }
             // it try to init stack p
             // LD sp,nn
@@ -526,7 +544,36 @@ impl<M: BusSpace + Mem + FormatDataDebug> Cpu<M> {
                 println!("Disable interupt");
                 1
             }
-            
+            //CP n
+            (3,7,6) => {
+                let cp=self.fetch_op(addr + 1);
+                let (cmp,over) = self.regs.a().overflowing_add(cp);
+                if cmp ==0
+                {
+                    self.regs.set_zero_flag();
+                }
+                else
+                {
+                    self.regs.clear_zero_flag();
+                }
+                if cmp & 128 == 128
+                {
+                    self.regs.set_sign_flag();
+                }
+                else
+                {
+                    self.regs.clear_sign_flag();
+                }
+                if over
+                {
+                    self.regs.set_parity_overflow_flag()
+                }
+                else
+                {
+                    self.regs.clear_parity_overflow_flag()
+                }
+                2
+            }
             //OR A ^ v
             (3,6,6) => {
                 let read=self.fetch_op(addr + 1);
@@ -541,12 +588,13 @@ impl<M: BusSpace + Mem + FormatDataDebug> Cpu<M> {
         };
     }
     fn print_debug(&mut self, op: u8, addr: u16) -> () {
-        let (x, y, z) = (op >> 6, (op >> 2 & 0x0F), op & 0b11);
+
         let (x1,y1,z1) = (op >> 6, (op >> 3 & 0x7), op & 0x7);
         println!("--------------------------------");
 
-        println!("ERROR OP CODE :{} {:02X} {:08b}  ({},{},{}) ({},{},{})",op,op,op,x1,y1,z1,x,y,z);
+        println!("ERROR OP CODE :{} {:02X} {:08b}  ({},{},{})",op,op,op,x1,y1,z1);
         println!("ERROR NEXT CODE :{:X}", self.mem.load(addr + 1));
+        self.trace_ram();
         println!("--------------------------------");
         panic!("OP ERROR 0x{:X}", op)
     }

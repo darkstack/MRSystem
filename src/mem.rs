@@ -3,6 +3,27 @@ use std::fmt::format;
 
 use crate::utils::FormatDataDebug;
 
+/*
+Memory map
+==========
+    $10000 -----------------------------------------------------------
+           Paging registers
+     $FFFC -----------------------------------------------------------
+           Mirror of RAM at $C000-$DFFF
+     $E000 -----------------------------------------------------------
+           8k of on-board RAM (mirrored at $E000-$FFFF)
+     $C000 -----------------------------------------------------------
+           16k ROM Page 2, or one of two pages of Cartridge RAM
+     $8000 -----------------------------------------------------------
+           16k ROM Page 1
+     $4000 -----------------------------------------------------------
+           15k ROM Page 0
+     $0400 -----------------------------------------------------------
+           First 1k of ROM Bank 0, never paged out with rest of Page 0
+     $0000 -----------------------------------------------------------
+*/
+
+
 //use std::io::{self, Read, Write};
 use crate::{bus::BusSpace, ram::Ram, rom::Rom, vdp::Vdp};
 use crate::utils::*;
@@ -75,10 +96,9 @@ impl Mem for MemMap {
             ret
         }
     }
-    //TODO: uGly
+    
     fn loadw(&mut self, addr: u16) -> u16 {
         if addr > 0xC000 {
-            
             let ret = get_u16_from_2_u8( self.ram.peek(addr & 0x1FFF), self.ram.peek((addr+1)&0x1FFF) );
             ret
         }
@@ -90,7 +110,7 @@ impl Mem for MemMap {
     fn store(&mut self, addr: u16, v: u8) {
         println!("write at {:x} value {:x}", addr, v);
         //RAM
-        if (addr > 0xC000){
+        if addr > 0xC000 {
             self.ram.poke(addr & 0x1FFF,v);
         }
         else{
@@ -101,11 +121,10 @@ impl Mem for MemMap {
         println!("writew at {:x} value {:x}", addr, v);
         //RAM
 
-        if ( addr > 0xC000 ) {
+        if addr > 0xC000 {
             let (a,b) = get_2_u8_from_u16(v);
             self.ram.poke(addr & 0x1FFF,a);
             self.ram.poke((addr & 0x1FFF)+1,b);
-            println!("{:?}",self.ram.buff);
         }
         else{
             panic!("{:04X} : NOT MAPPED",addr);
